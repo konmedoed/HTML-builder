@@ -7,7 +7,9 @@ fs.writeFile(path.join(__dirname, "text.txt"), '', (err) => {
 })
 
 process.stdin.on('data', (data) => {
-  if (data.toString().includes('exit')) exit();
+  checkExitArray = data.toString().split('');
+  checkExit = checkExitArray.slice(0, 4).join('');
+  if (checkExit === 'exit') exit();
   fs.appendFile(path.join(__dirname, "text.txt"), data, (err) => {
     if (err) throw err;
   })

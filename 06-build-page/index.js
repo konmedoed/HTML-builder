@@ -1,4 +1,3 @@
-const { error } = require('console');
 const fs = require ('fs');
 const path = require ('path');
 
@@ -22,12 +21,12 @@ function readTemplate(){
     const components = [];
     arrLayoutTemplate.forEach(item => {
       if (item.includes('{{') && item.includes('}}')) {
-        const startIndex = item.lastIndexOf('{');
-        const lastIndex = item.indexOf('}');
-        const str = item.slice(startIndex + 1, lastIndex);
-        componentFiles.forEach(item => {
-          if (path.basename(item, '.html') === str) components.push(str);
+        const array = item.split('{{').filter(item => item.includes('}}'));
+        const namesOfComp = array.map(item => {
+          const index = item.indexOf('}');
+          return item.slice(0, index);
         });
+        namesOfComp.forEach(item => components.push(item));
       }
     })
     getLayout(components);
@@ -37,26 +36,29 @@ function readTemplate(){
 function getLayout(arr){
   const layDataObj = {};
   arr.forEach((item, index) => {
-    fs.readFile(path.join(__dirname, 'components', (item + '.html')), 'utf-8', (err, data) => {
-      if (err) console.log(err);
+    const readLay = fs.createReadStream(path.join(__dirname, 'components', (item + '.html')), 'utf-8');
+    let data = '';
+    let counter = index;
+    readLay.on('data', (chunk) => data += chunk);
+    readLay.on('end', () => {
       layDataObj[item] = data;
-      if (index === arr.length - 1) generateUnionLayout(layDataObj);
-    })
+      if (counter === arr.length-1) generateUnionLayout(layDataObj);
+    });
   })
 }
 
 function generateUnionLayout(data){
-  const newTemplate = arrLayoutTemplate.map(item => {
-    for (let key in data) {
-      if (item.includes(('{{' + key + '}}'))){
-        return item.replace(('{{' + key + '}}'), data[key])
-      }
+  let newTemplate = arrLayoutTemplate.join('\r\n');
+  for (let key in data) {
+    const strKey = '{{' + key + '}}';
+    if (newTemplate.includes(strKey)){
+      const correctedTemplate = newTemplate.replace(strKey, data[key]);
+      newTemplate = correctedTemplate;
     }
-    return item;
-  });
+  }
   fs.writeFile(
     path.join(__dirname, 'project-dist', 'index.html'),
-    newTemplate.join('\r\n'),
+    newTemplate,
     (err) => {if (err) throw err}
   )
 }

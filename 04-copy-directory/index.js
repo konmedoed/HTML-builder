@@ -3,7 +3,16 @@ const fs = require ('fs');
 
 fs.mkdir(path.join(__dirname, 'files-copy'), (err) => {
   if (err) console.log('folder exist!');
-  copyFiles();
+  fs.readdir(path.join(__dirname, 'files-copy'), { withFileTypes: true }, (err, data) => {
+      if (err) throw err
+      for (let i=0; i<data.length; i++){
+        fs.unlink(path.join(__dirname, 'files-copy', data[i].name), (err) => {
+            if (err) throw err;
+        });
+      }
+      copyFiles();
+    }
+  );
 });
 
 function copyFiles(){
